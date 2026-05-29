@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. users/{userId} 문서 및 profile 필드 / 서브컬렉션 제어 규칙
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+      
+      match /profile/{document=**} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // 2. users/{userId}/links/{linkId} 서브컬렉션 링크 목록 제어 규칙
+      match /links/{linkId} {
+        // 읽기는 누구나 허용 (공유 프로필 하위의 링크 리스트 노출 허용)
+        allow read: if true;
+        
+        // 링크 생성 및 삭제는 본인만 가능
+        allow create, delete: if request.auth != null && request.auth.uid == userId;
+        
+        // 링크 수정은 본인이거나, 타인의 경우 오직 clickCount 필드의 +1 증가 업데이트만 엄격히 허용!
+        allow update: if (request.auth != null && request.auth.uid == userId)
+                      || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['clickCount'])
+                          && (request.resource.data.clickCount == resource.data.clickCount + 1
+                              || (resource.data.clickCount == null && request.resource.data.clickCount == 1)));
+      }
+    }
+    
+  }
+}

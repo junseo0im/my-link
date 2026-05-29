@@ -3,6 +3,7 @@ export interface LinkItem {
   title: string;
   url: string;
   icon?: string; // Lucide React 아이콘 이름 등 매핑용 선택 필드
+  clickCount?: number; // 실시간 클릭수 집계용 선택 필드
 }
 
 export const dummyLinks: LinkItem[] = [
